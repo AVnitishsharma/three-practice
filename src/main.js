@@ -1,6 +1,7 @@
 import "./style.css";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { GLTFLoader } from "three/examples/jsm/Addons.js";
 
 //size of canvas
 const sizes = {
@@ -18,49 +19,80 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000,
 );
+camera.position.set(0, 1, 9);
 
 //mesh (actor)
 
-const texture = new THREE.TextureLoader().load("/src/texture.jpg");
-texture.colorSpace = THREE.SRGBColorSpace;
+const gltfLoader = new GLTFLoader();
+let mixer;
+let animations = [];
 
-const top = new THREE.Mesh(
-  new THREE.TorusGeometry(0.8, 0.04, 16, 100),
-  new THREE.MeshStandardMaterial({ color: 0xc0c0c0 }),
-);
-top.rotation.x = Math.PI / 2;
-top.position.y = 1.84;
+gltfLoader.load("./mobal.glb", (gltf) => {
+  const model = gltf.scene;
+  scene.add(model);
+  model.position.set(0, -2, 0);
 
-const topbottom = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.8, 1, 0.3, 32),
-  new THREE.MeshStandardMaterial({ color: 0xe70708 }),
-);
+  mixer = new THREE.AnimationMixer(model);
+  animations = gltf.animations;
+  console.log(animations);
+})
 
-topbottom.position.y = 1.65;
+document.querySelector(".dance").addEventListener("click", dance);
+document.querySelector(".deth").addEventListener("click", deth);
+document.querySelector(".punch").addEventListener("click", punch);
+document.querySelector(".jump").addEventListener("click", jump);
+document.querySelector(".thumbsUp").addEventListener("click", thumbsUp);
+function dance() {
+   if (!mixer || animations.length === 0) return;
 
-const body = new THREE.Mesh(
-  new THREE.CylinderGeometry(1, 1, 3, 32),
-  new THREE.MeshStandardMaterial({ map: texture }),
-);
+  const action = mixer.clipAction(
+    animations[0]
+  );
 
-const base = new THREE.Mesh(
-  new THREE.CylinderGeometry(1, 0.9, 0.18, 32),
-  new THREE.MeshStandardMaterial({ color: 0xc0c0c0 }),
-);
+  action.reset();
+  action.setLoop(THREE.LoopOnce); // LoopOnce
+  action.play();
+};
 
-base.position.y = -1.59;
+function deth() {
+  if (!mixer || animations.length === 0) return;
+  const action = mixer.clipAction(
+    animations[1]
+  );
+  action.reset();
+  action.setLoop(THREE.LoopOnce); // LoopOnce
+  action.play();
+};
 
-const group = new THREE.Group();
+function punch() {
+  if (!mixer || animations.length === 0) return;
+  const action = mixer.clipAction(
+    animations[5]
+  );
+  action.reset();
+  action.setLoop(THREE.LoopOnce); // LoopOnce
+  action.play();
+};
 
-group.add(base);
-group.add(topbottom);
-group.add(body);
-group.add(top);
+function jump() {
+  if (!mixer || animations.length === 0) return;
+  const action = mixer.clipAction(
+    animations[3]
+  );
+  action.reset();
+  action.setLoop(THREE.LoopOnce); // LoopOnce
+  action.play();
+};
 
-scene.add(group);
-const objects = [base, topbottom, body, top];
-
-camera.position.z = 5;
+function thumbsUp() {
+  if (!mixer || animations.length === 0) return;
+  const action = mixer.clipAction(
+    animations[9]
+  );
+  action.reset();
+  action.setLoop(THREE.LoopOnce); // LoopOnce
+  action.play();
+};
 
 //canver(parda)
 const canvas = document.querySelector("canvas");
@@ -84,12 +116,12 @@ window.addEventListener("resize", () => {
 });
 
 //light
-const light = new THREE.AmbientLight(0xffffff, 7); //point light
+const light = new THREE.AmbientLight(0xffffff, 3); //point light
 light.position.set(0, 2, 5); //light position
 scene.add(light);
 
 //background
-scene.background = new THREE.Color(0x1f5fa0);
+scene.background = new THREE.Color(0x000000);
 
 // raycaster
 const raycaster = new THREE.Raycaster();
@@ -99,21 +131,14 @@ const mouse = new THREE.Vector2();
 let intersects;
 let isRotating = true;
 
-window.addEventListener("mousemove", (e) => {
-  mouse.x = (e.clientX / sizes.width) * 2 - 1;
-  mouse.y = -(e.clientY / sizes.height) * 2 + 1;
-  raycaster.setFromCamera(mouse, camera);
-  intersects = raycaster.intersectObjects(objects);
+// window.addEventListener("mousemove", (e) => {
+//   mouse.x = (e.clientX / sizes.width) * 2 - 1;
+//   mouse.y = -(e.clientY / sizes.height) * 2 + 1;
+//   raycaster.setFromCamera(mouse, camera);
+//   intersects = raycaster.intersectObjects(objects);
 
-  // Hovered object ka scale bada
-  if (intersects.length > 0) {
-    group.scale.set(1.2, 1.2, 1.2);
-    isRotating = false;
-  } else {
-    group.scale.set(1, 1, 1);
-    isRotating = true;
-  }
-});
+ 
+// });
 
 //time
 const clock = new THREE.Clock(); //time
@@ -122,11 +147,9 @@ const clock = new THREE.Clock(); //time
 const animate = () => {
   const delta = clock.getDelta();
 
-  if (isRotating) {
-    group.rotation.y += delta * 0.9;
+  if (mixer) {
+    mixer.update(delta);
   }
-
-  controls.update();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 };
